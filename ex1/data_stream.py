@@ -37,8 +37,27 @@ class DataStream(ABC):
         pass
 
     @abstractmethod
-    def filter_data(self, data_batch: List[any], critera: Optional[str]):
-        pass
+    def filter_data(self, data_batch: List[any],
+                    critera: Optional[str]) -> List[any]:
+        if isinstance(data_batch, list) is False:
+            data_batch = [data_batch]
+        new = list()
+        count = 0
+        for i in data_batch:
+            if isinstance(i, critera) is True:
+                new.append(i)
+            else:
+                count += 1
+        Utils.Display(" > Filtering result: Success !",
+                      (155, 255, 155))
+        Utils.Display(f" > Removed {count} unwanted values",
+                      (105, 105, 255))
+        try:
+            self.Errors += count
+        except AttributeError:
+            self.Errors = count
+        self.Data = new
+        return (new)
 
     @abstractmethod
     def get_stats(self) -> dict[str, Union[str, int, float]]:
@@ -49,6 +68,8 @@ class SensorStream(DataStream):
     """Child of data stream"""
     def process_batch(self, data_batch: List[any]) -> str:
         try:
+            if isinstance(data_batch, int) is True:
+                data_batch = [data_batch]
             main = data_batch[0]
             Utils.Display("Processing Movement...",
                           (255, 255, 0), None, False, False, True)
@@ -60,16 +81,16 @@ class SensorStream(DataStream):
                 if i == main and last == i:
                     continue
                 elif i != last and last == main:
-                    Utils.Display(f" - Movement of {i} started at {count}",
+                    Utils.Display(f" ! Movement of {i} started at {count}",
                                   (155, 0, 155))
                 elif i < last and i != main:
                     Utils.Display(f" - Movement of {i} decreased at {count}",
                                   (155, 0, 155))
                 elif i > last and i > main:
-                    Utils.Display(f" - Movement of {i} increased at {count}",
+                    Utils.Display(f" + Movement of {i} increased at {count}",
                                   (155, 0, 155))
                 elif i != last and i == main:
-                    Utils.Display(f" - Movement stabilized to {i} at {count}",
+                    Utils.Display(f"   Movement stabilized to {i} at {count}",
                                   (155, 0, 155))
                 last = i
             return ("Processing Ended")
@@ -80,25 +101,40 @@ class SensorStream(DataStream):
         except TypeError:
             Utils.Display("Only a list of int needs to be provided !",
                           (255, 255, 0), None, True, False, False)
+            return ("Process Failed")
         except ValueError:
             Utils.Display("Only a list of int needs to be provided !",
                           (255, 255, 0), None, True, False, False)
             return ("Process Failed")
 
     def filter_data(self, data_batch: List[any], critera: Optional[str]):
-        pass
+        return (super().filter_data(data_batch, critera))
 
     def get_stats(self) -> dict[str, Union[str, int, float]]:
-        pass
+        unwanted = "<not found>"
+        dats = "<not foumd>"
+        try:
+            unwanted = self.Errors
+            dats = len(self.Data)
+        except AttributeError:
+            pass
+        Utils.Display(f"Total Unwanted value removed: {unwanted}\n"
+                      f"Total list length: {dats}",
+                      (255, 0, 255))
+        return ({"Unwanted Removed": unwanted, "List Length": dats})
 
 
 class TransactionStream(DataStream):
     """Child of data stream"""
     def process_batch(self, data_batch: List[any]) -> str:
-        pass
+        Utils.Display("\nInitiating Transaction...", (155, 0, 155), None,
+                      False, True)
+        self.Bank = 0
+        self.Transaction = 0
 
     def filter_data(self, data_batch: List[any], critera: Optional[str]):
-        pass
+        Utils.Display("filtering datas",
+                      (0, 0, 105))
 
     def get_stats(self) -> dict[str, Union[str, int, float]]:
         pass
@@ -118,8 +154,15 @@ class EventStream(DataStream):
 
 def data_stream() -> None:
     ss = SensorStream()
-    Utils.Display(ss.process_batch([5, 5, 5, 4, 3, 2, 1, 5, 5, 5, 1, 5, "a"]),
+    dats = [0, 0, 2, 1, 0, 0, 1, 4, 6, 8, 0, 0, 0, 0, "a", "b"]
+    Utils.Display(ss.process_batch(dats),
                   (0, 0, 255))
+    Utils.Display(ss.filter_data(dats,
+                                 int),
+                  (0, 0, 255), None, False, False, False, ", ")
+    ss.get_stats()
+    ts = TransactionStream()
+    ts.process_batch([500, 215])
 
 
 if __name__ == "__main__":
