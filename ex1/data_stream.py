@@ -48,7 +48,7 @@ class DataStream(ABC):
                 new.append(i)
             else:
                 count += 1
-        Utils.Display(" > Filtering result: Success !",
+        Utils.Display(" > Default Filtering result: Success !",
                       (155, 255, 155))
         Utils.Display(f" > Removed {count} unwanted values",
                       (105, 105, 255))
@@ -61,6 +61,11 @@ class DataStream(ABC):
 
     @abstractmethod
     def get_stats(self) -> dict[str, Union[str, int, float]]:
+        Utils.Display("\nDefault stats display...", (155, 0, 155), None,
+                      False, True)
+        for i, v in self.__dict__.items():
+            Utils.Display(f"\n{i}: {v}", (155, 0, 155), None,
+                          False, True)
         pass
 
 
@@ -131,25 +136,63 @@ class TransactionStream(DataStream):
                       False, True)
         self.Bank = 0
         self.Transaction = 0
+        try:
+            for i in data_batch:
+                self.Bank += i
+        except ValueError:
+            Utils.Display("The bank does not accept other currency than ints",
+                          (255, 0, 0))
+            return ("Denied")
+        Utils.Display(f"The bank holds {self.Bank} ints",
+                      (255, 0, 0))
+        return (f"{str(self.Bank)} ints")
 
     def filter_data(self, data_batch: List[any], critera: Optional[str]):
-        Utils.Display("filtering datas",
-                      (0, 0, 105))
+        Utils.Display("\nFiltering Transaction...", (155, 0, 155), None,
+                      False, True)
+        new = super().filter_data(data_batch, critera)
+        for i in new:
+            self.Bank -= i
+            self.Transaction += 1
+        Utils.Display(f"The bank now holds {self.Bank} ints after"
+                      f" {self.Transaction} Transactions",
+                      (255, 0, 0))
+        return (new)
 
     def get_stats(self) -> dict[str, Union[str, int, float]]:
-        pass
+        Utils.Display("\nInformation of the bank...", (155, 0, 155), None,
+                      False, True)
+        Utils.Display(f"The bank holds {self.Bank} ints"
+                      f"\nYou made a total of {self.Transaction} Transactions"
+                      "\nThe bank thanks you for your trust.",
+                      (255, 0, 255))
 
 
 class EventStream(DataStream):
     """Child of data stream"""
     def process_batch(self, data_batch: List[any]) -> str:
-        pass
+        Utils.Display("\nInitiating Events...", (155, 0, 155), None,
+                      False, True)
+        self.events = list()
+        for i in data_batch:
+            self.events.append(i)
+        Utils.Display(f"There are {len(self.events)} events",
+                      (255, 0, 0))
+        return ("Success")
 
     def filter_data(self, data_batch: List[any], critera: Optional[str]):
-        pass
+        bad = list()
+        Utils.Display("\nFiltering Events...", (155, 0, 155), None,
+                      False, True)
+        for i in data_batch:
+            if isinstance(i, critera) is False:
+                bad.append(i)
+        Utils.Display(f"The given list have {len(bad)} unvalid events",
+                      (255, 0, 0))
+        return (bad)
 
     def get_stats(self) -> dict[str, Union[str, int, float]]:
-        pass
+        super().get_stats()
 
 
 def data_stream() -> None:
@@ -163,6 +206,14 @@ def data_stream() -> None:
     ss.get_stats()
     ts = TransactionStream()
     ts.process_batch([500, 215])
+    ts.filter_data([250, 215], int)
+    ts.get_stats()
+
+    es = EventStream()
+    dats = ["process", "checking", "endstatus", 42]
+    es.process_batch(dats)
+    es.filter_data(dats, str)
+    es.get_stats()
 
 
 if __name__ == "__main__":
