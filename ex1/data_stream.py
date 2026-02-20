@@ -64,9 +64,13 @@ class DataStream(ABC):
         Utils.Display("\nDefault stats display...", (155, 0, 155), None,
                       False, True)
         for i, v in self.__dict__.items():
-            Utils.Display(f"\n{i}: {v}", (155, 0, 155), None,
-                          False, True)
-        pass
+            Utils.Display(f"self.{i}: ", (255, 155, 255), None,
+                          True, True, False, "")
+            Utils.Display(f"{v}", (155, 255, 255), None,
+                          False, False)
+        Utils.Display("Default stats display Done !", (0, 255, 255), None,
+                      False, True)
+        return (dict(self.__dict__.items()))
 
 
 class SensorStream(DataStream):
@@ -195,6 +199,11 @@ class EventStream(DataStream):
         super().get_stats()
 
 
+def StreamProcessor(stream: DataStream, value: Union[int, str, list]) -> str:
+    val = stream.process_batch((), value)
+    return val
+
+
 def data_stream() -> None:
     ss = SensorStream()
     dats = [0, 0, 2, 1, 0, 0, 1, 4, 6, 8, 0, 0, 0, 0, "a", "b"]
@@ -214,6 +223,8 @@ def data_stream() -> None:
     es.process_batch(dats)
     es.filter_data(dats, str)
     es.get_stats()
+
+    StreamProcessor(SensorStream, [0, 1, 2, 3, 2, 1, 0])
 
 
 if __name__ == "__main__":
